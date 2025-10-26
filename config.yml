@@ -1,0 +1,2 @@
+POKEMON_API: https://pokeapi.co/api/v2/pokemon
+MONGO_DB_URI: mongodb://localhost:27017

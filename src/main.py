@@ -14,7 +14,7 @@ data_extractor = DataExtractor(source=api_url)
 
 # System prompt to guide the LLM
 
-USER_PROMPT = "what are the moves pikachu can learn?"
+USER_PROMPT = "what's the weight of MILOTIC?"
 
 system_prompt = """
 You are a Pokemon expert assistant. When a user asks about Pokemon attributes like type, stats, etc., use the get_pokemon_attributes function to fetch data.
@@ -24,6 +24,7 @@ If multiple attributes are asked (e.g., types and weaknesses), include them in '
 If no specific attribute, infer the closest (e.g., 'what is Pikachu?' -> ['types', 'stats']).
 When usin the function, ensure 'pokemon_name' is a **list** of names, e.g., ["pikachu"]; and 'attribute' is a **list** of requested attributes, e.g., ["types"].
 If user asks for height, state both measures in feet and meters.
+Species are generic, so a pokemon is of category/kind 'species'.
 """
 
 response = client.chat.completions.create(
@@ -56,7 +57,7 @@ response = client.chat.completions.create(
                             "type": "array",
                             "items": {
                                 "type": "string",
-                                "enum": ['abilities', 'sound', 'cry', 'height', 'id', 'location_area_encounters', 'moves', 'name', 'order', 'past_abilities', 'past_types', 'species', 'sprites', 'stats', 'types', 'weight']
+                                "enum": ['abilities', 'sound', 'cry', 'height', 'id', 'location_area_encounters', 'moves', 'species', 'stats', 'types', 'weight']
                             },
                             "description": "List of attributes requested (e.g., ['types']). Infer from the prompt what info is asked; default to ['types'] if unclear but related."
                         }
@@ -66,7 +67,7 @@ response = client.chat.completions.create(
             }
         }
     ],
-    tool_choice="auto",  # Let LLM decide if/when to call
+    tool_choice="auto",
     )
 
 tool_calls = response.choices[0].message.tool_calls

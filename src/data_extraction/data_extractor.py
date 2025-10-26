@@ -55,7 +55,7 @@ class DataExtractor:
         if attr == "cries":
             processed_data = f"The latest sound for this pokemon can be found using this link: {field_data['latest']}"
         if attr == "height":
-            processed_data = DataExtractor.decimeters_to_feet_inches(field_data)
+            processed_data = DataExtractor.convert_decimeters_to_feet_inches(field_data)
         if attr == "location_area_encounters":
             all_locations = requests.get(field_data).json()
             all_location_names = [loc['location_area']['name'].replace("-", " ").title() for loc in all_locations]
@@ -64,6 +64,14 @@ class DataExtractor:
         if attr == "moves":
             move_names = [move['move']['name'].replcae("-", " ") for move in field_data]
             processed_data = ", ".join(move_names)
+        if attr == "species":
+            species_response = requests.get(field_data['url']).json()
+            species_eng = [species["genus"] for species in species_response.get('genera', [{}]) if species["language"]["name"] == "en"]
+            species_eng_name = species_eng[0] if len(species_eng) else "No species found"
+            processed_data = species_eng_name.replace(" Pokémon", "")
+        if attr == "weight":
+            processed_data = DataExtractor.convert_hectograms_to_pounds(field_data)
+            processed_data += f" ( or {DataExtractor.convert_hectograms_to_kilograms(field_data)})"
         return processed_data
     
     @staticmethod
@@ -79,9 +87,19 @@ class DataExtractor:
         return pokemon_names
 
     @staticmethod
-    def decimeters_to_feet_inches(decimeters: float) -> str:
+    def convert_decimeters_to_feet_inches(decimeters: float) -> str:
         total_inches = round(decimeters * 39.3701 / 10, 0)
         feet = str(int(total_inches // 12))
         inches = str(round(total_inches % 12))
         inches = "0" + inches if len(inches) == 1 else inches
         return f"{feet}'{inches}\""
+    
+    @staticmethod
+    def convert_hectograms_to_pounds(hectograms: float) -> str:
+        pounds = round(hectograms * 0.220462, 2)
+        return f"{pounds} lbs"
+    
+    @staticmethod
+    def convert_hectograms_to_kilograms(hectograms: float) -> str:
+        kilograms = round(hectograms / 10, 2)
+        return f"{kilograms} kg"

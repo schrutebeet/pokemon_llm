@@ -67,7 +67,7 @@ python -m src.main
 
 ## 🧩 Configuration
 
-Edit `config.yml` to customize your data sources, extraction parameters, and more.
+A `config.yml` Is already definded with the main API URL.
 
 ---
 

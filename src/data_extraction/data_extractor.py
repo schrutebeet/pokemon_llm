@@ -38,7 +38,7 @@ class DataExtractor:
         if attr == "id":
             processed_data = field_data
         if attr == "types":
-            processed_data = field_data[0]['type']['name']
+            processed_data = ", ".join([pkmn_type['type']['name'] for pkmn_type in field_data])
         if attr == "stats":
             for stat in field_data:
                 if processed_data is None:
@@ -62,7 +62,7 @@ class DataExtractor:
             locations = ", ".join(all_location_names) if len(all_location_names) else "This pokemon has no specific location area encounters."
             processed_data = locations
         if attr == "moves":
-            move_names = [move['move']['name'].replcae("-", " ") for move in field_data]
+            move_names = [move['move']['name'].replace("-", " ") for move in field_data]
             processed_data = ", ".join(move_names)
         if attr == "species":
             species_response = requests.get(field_data['url']).json()

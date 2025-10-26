@@ -6,7 +6,7 @@ from huggingface_hub import InferenceClient
 
 from src.config.config import Config
 from src.prompts import system_prompt
-from src.data_extraction.data_extractor import DataExtractor
+from data_extractor import DataExtractor
 
 client = InferenceClient()
 config = Config()
@@ -36,7 +36,7 @@ def handle_user_prompt(user_prompt: str):
                     "parameters": { 
                         "type": "object",
                         "properties": {
-                            "pokemon_name": {
+                            "pokemon_list": {
                                 "type": "array",
                                 "items": {"type": "string"},
                                 "description": "List of Pokemon names (lowercase, e.g., ['pikachu', 'charizard']). Extract all mentioned Pokemon from the prompt."
@@ -50,7 +50,7 @@ def handle_user_prompt(user_prompt: str):
                                 "description": "List of attributes requested (e.g., ['types']). Infer from the prompt what info is asked; default to ['types'] if unclear but related."
                             }
                         },
-                        "required": ["pokemon_name", "attributes"]
+                        "required": ["pokemon_list", "attributes"]
                     }
                 }
             }
@@ -99,5 +99,5 @@ demo = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
-    demo.launch(share=True)
-    # chat_bot("whats the species of gyarados? and its type?")
+    # demo.launch(share=True)
+    print(chat_bot("what are the abilities of Iron Crown?"))

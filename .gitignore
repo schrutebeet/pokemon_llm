@@ -173,6 +173,9 @@ pokemon_venv/
 .dmypy.json
 dmypy.json
 
+# Debugginhg files
+launch.json
+
 # Pyre type checker
 .pyre/
 

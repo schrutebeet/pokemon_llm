@@ -99,5 +99,5 @@ demo = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
-    # demo.launch(share=True)
-    print(chat_bot("what are the abilities of Iron Crown?"))
+    demo.launch(share=True)
+    # print(chat_bot("what are the abilities of Iron Crown?"))

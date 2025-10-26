@@ -6,7 +6,7 @@ from huggingface_hub import InferenceClient
 
 from src.config.config import Config
 from src.prompts import system_prompt
-from data_extractor import DataExtractor
+from src.data_extractor import DataExtractor
 
 client = InferenceClient()
 config = Config()

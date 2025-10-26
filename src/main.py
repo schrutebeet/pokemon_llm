@@ -1,9 +1,11 @@
 import os
 import json
 import requests
+import gradio as gr
 from huggingface_hub import InferenceClient
 
 from src.config.config import Config
+from src.prompts import system_prompt
 from src.data_extraction.data_extractor import DataExtractor
 
 client = InferenceClient()
@@ -12,90 +14,90 @@ api_url = config.get('POKEMON_API')
 data_extractor = DataExtractor(source=api_url)
 
 
-# System prompt to guide the LLM
-
-USER_PROMPT = "what's the weight of MILOTIC?"
-
-system_prompt = """
-You are a Pokemon expert assistant. When a user asks about Pokemon attributes like type, stats, etc., use the get_pokemon_attributes function to fetch data.
-Do not answer directly; always call the function if it matches.
-Normalize Pokemon names to lowercase official spellings (e.g., 'Pikachu' -> 'pikachu').
-If multiple attributes are asked (e.g., types and weaknesses), include them in 'attribute'.
-If no specific attribute, infer the closest (e.g., 'what is Pikachu?' -> ['types', 'stats']).
-When usin the function, ensure 'pokemon_name' is a **list** of names, e.g., ["pikachu"]; and 'attribute' is a **list** of requested attributes, e.g., ["types"].
-If user asks for height, state both measures in feet and meters.
-Species are generic, so a pokemon is of category/kind 'species'.
-"""
-
-response = client.chat.completions.create(
-    model="openai/gpt-oss-120b",
-    messages=[
-        {
-            "role": "system",
-            "content": system_prompt
-        },
-        {
-            "role": "user",
-            "content": USER_PROMPT,
-        }
-    ],
-    tools=[
-        {
-            "type": "function",
-            "function": {
-                "name": "get_pokemon_attributes",
-                "description": "Fetch specific attributes for Pokemon.",
-                "parameters": { 
-                    "type": "object",
-                    "properties": {
-                        "pokemon_name": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "List of Pokemon names (lowercase, e.g., ['pikachu', 'charizard']). Extract all mentioned Pokemon from the prompt."
-                        },
-                        "attributes": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "enum": ['abilities', 'sound', 'cry', 'height', 'id', 'location_area_encounters', 'moves', 'species', 'stats', 'types', 'weight']
+def handle_user_prompt(user_prompt: str):
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-120b",
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": user_prompt,
+            }
+        ],
+        tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_pokemon_attributes",
+                    "description": "Fetch specific attributes for Pokemon.",
+                    "parameters": { 
+                        "type": "object",
+                        "properties": {
+                            "pokemon_name": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "List of Pokemon names (lowercase, e.g., ['pikachu', 'charizard']). Extract all mentioned Pokemon from the prompt."
                             },
-                            "description": "List of attributes requested (e.g., ['types']). Infer from the prompt what info is asked; default to ['types'] if unclear but related."
-                        }
-                    },
-                    "required": ["pokemon_name", "attributes"]
+                            "attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "enum": ['abilities', 'sound', 'cry', 'height', 'id', 'location_area_encounters', 'moves', 'species', 'stats', 'types', 'weight']
+                                },
+                                "description": "List of attributes requested (e.g., ['types']). Infer from the prompt what info is asked; default to ['types'] if unclear but related."
+                            }
+                        },
+                        "required": ["pokemon_name", "attributes"]
+                    }
                 }
             }
-        }
-    ],
-    tool_choice="auto",
-    )
+        ],
+        tool_choice="auto",
+        )
 
-tool_calls = response.choices[0].message.tool_calls
-if tool_calls:
-    for call in tool_calls:
-        function_name = call.function.name
-        arguments = json.loads(call.function.arguments)
+    tool_calls = response.choices[0].message.tool_calls
+    if tool_calls:
+        for call in tool_calls:
+            function_name = call.function.name
+            arguments = json.loads(call.function.arguments)
 
-        # 3️⃣ Run your actual function in Python
-        if function_name == "get_pokemon_attributes":
-            result = data_extractor.extract_specific_attribute(**arguments)
+            if function_name == "get_pokemon_attributes":
+                result = data_extractor.extract_specific_attribute(**arguments)
 
-            # 4️⃣ Send function result back to the model to get a human-style answer
-            followup = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": USER_PROMPT},
-                    response.choices[0].message,  # the assistant’s tool call message
-                    {
-                        "role": "tool",
-                        "tool_call_id": call.id,
-                        "name": function_name,
-                        "content": json.dumps(result)
-                    }
-                ]
-            )
-            print(followup.choices[0].message.content)
-else:
-    # No tool call — model answered directly
-    print(response.choices[0].message.content)
+                followup = client.chat.completions.create(
+                    model="openai/gpt-oss-120b",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                        response.choices[0].message,  # the assistant’s tool call message
+                        {
+                            "role": "tool",
+                            "tool_call_id": call.id,
+                            "name": function_name,
+                            "content": json.dumps(result)
+                        }
+                    ]
+                )
+                return followup.choices[0].message.content
+    else:
+        return response.choices[0].message.content
+
+
+def chat_bot(message, history = []):
+    response = handle_user_prompt(message)
+    return response
+
+# Launch the UI
+demo = gr.ChatInterface(
+    fn=chat_bot,
+    title="Pokemon LLM Chat",
+    description="Ask about Pokemon types, stats, etc.!",
+    examples=["What's the type of Pikachu?", "Compare stats of Charizard and Blastoise."]
+)
+
+if __name__ == "__main__":
+    demo.launch(share=True)
+    # chat_bot("whats the species of gyarados? and its type?")

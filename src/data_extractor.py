@@ -21,19 +21,19 @@ class DataExtractor:
             data_output[pokemon_name] = response.json()
         return data_output
     
-    def extract_specific_attribute(self, pokemon_name: Union[str, List], attributes: List[str]) -> Dict[str, Dict]:
+    def extract_specific_attribute(self, pokemon_list: Union[str, List], attributes: List[str]) -> Dict[str, Dict]:
         data_output = {}
-        pokemon_data = self.extract_full_data(pokemon_name)
-        for pokemon_name, pokemon_data in pokemon_data.items():
+        pokemon_data = self.extract_full_data(pokemon_list)
+        for pokemon_name, pokemon_info in pokemon_data.items():
             data_output[pokemon_name] = {}
             for attr in attributes:
                 attr = self.__transform_attr_name(attr)
-                attr_info = pokemon_data.get(attr, None)
-                data_output[pokemon_name][attr] = self.__process_json_field(attr_info, attr)
+                attr_info = pokemon_info.get(attr, None)
+                data_output[pokemon_name][attr] = self._process_json_field(attr_info, attr)
         return data_output
     
     @staticmethod
-    def __process_json_field(field_data: Union[str, Any], attr: str) -> Union[str, Any]:
+    def _process_json_field(field_data: Union[str, Any], attr: str) -> Union[str, Any]:
         processed_data = None
         if attr == "id":
             processed_data = field_data
@@ -71,7 +71,7 @@ class DataExtractor:
             processed_data = species_eng_name.replace(" Pokémon", "")
         if attr == "weight":
             processed_data = DataExtractor.convert_hectograms_to_pounds(field_data)
-            processed_data += f" ( or {DataExtractor.convert_hectograms_to_kilograms(field_data)})"
+            processed_data += f" (or {DataExtractor.convert_hectograms_to_kilograms(field_data)})"
         return processed_data
     
     @staticmethod

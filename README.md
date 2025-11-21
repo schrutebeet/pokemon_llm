@@ -8,6 +8,9 @@
 
 Welcome to my Pokémon LLM project! This project uses LLMs, along with function calling and a simple interface to help users understand more about pokemons.
 
+## Versions
+
+#### **Version 1.0**: Release of a basic LLM with API capabilities.
 ---
 
 ## 🚀 Features

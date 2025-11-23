@@ -1,36 +1,43 @@
-from typing import Union, List, Dict, Any
+import copy
+from typing import Union, List, Dict, Any, Annotated
 
 import requests
+
+GAME_TO_REPLICATE = "emerald"
 
 
 class DataExtractor:
     def __init__(self, source: str):
         self.source = source
 
-    def extract_full_data(self, pokemon_name: Union[str, List] = "all") -> Dict[str, Dict]:
+    def extract_full_data(self, pokemon_name: Union[str, List] = "all") -> List[str]:
         # Placeholder for extraction logic
-        data_output = {}
+        data_output = []
         if pokemon_name == "all":
             pass
         elif isinstance(pokemon_name, list):
             for name in pokemon_name:
                 response = requests.get(f"{self.source}/{name}")
-                data_output[name] = response.json()
+                pokemon_info = response.json()
+                pokemon_info["name"] = name
+                data_output.append(pokemon_info)
         else:
             response = requests.get(f"{self.source}/{pokemon_name}")
-            data_output[pokemon_name] = response.json()
+            pokemon_info = response.json()
+            pokemon_info["name"] = name
+            data_output.append(pokemon_info)
         return data_output
     
-    def extract_specific_attribute(self, pokemon_list: Union[str, List], attributes: List[str]) -> Dict[str, Dict]:
-        data_output = {}
+    def extract_specific_attribute(self, pokemon_list: Union[str, List], attributes: List[str]) -> List[str]:
+        output = []
         pokemon_data = self.extract_full_data(pokemon_list)
-        for pokemon_name, pokemon_info in pokemon_data.items():
-            data_output[pokemon_name] = {}
+        for pkmn_info in pokemon_data:
             for attr in attributes:
                 attr = self.__transform_attr_name(attr)
-                attr_info = pokemon_info.get(attr, None)
-                data_output[pokemon_name][attr] = self._process_json_field(attr_info, attr)
-        return data_output
+                attr_info = pkmn_info.get(attr, None)
+                pkmn_info[attr] = self._process_json_field(attr_info, attr)
+            output.append(pkmn_info)
+        return output
     
     @staticmethod
     def _process_json_field(field_data: Union[str, Any], attr: str) -> Union[str, Any]:
@@ -38,7 +45,7 @@ class DataExtractor:
         if attr == "id":
             processed_data = field_data
         if attr == "types":
-            processed_data = ", ".join([pkmn_type['type']['name'] for pkmn_type in field_data])
+            processed_data = [pkmn_type['type']['name'] for pkmn_type in field_data]
         if attr == "stats":
             for stat in field_data:
                 if processed_data is None:
@@ -55,23 +62,32 @@ class DataExtractor:
         if attr == "cries":
             processed_data = f"The latest sound for this pokemon can be found using this link: {field_data['latest']}"
         if attr == "height":
-            processed_data = DataExtractor.convert_decimeters_to_feet_inches(field_data)
+            # processed_data = DataExtractor.convert_decimeters_to_feet_inches(field_data)
+            processed_data = round(field_data / 10, 2)
         if attr == "location_area_encounters":
             all_locations = requests.get(field_data).json()
             all_location_names = [loc['location_area']['name'].replace("-", " ").title() for loc in all_locations]
             locations = ", ".join(all_location_names) if len(all_location_names) else "This pokemon has no specific location area encounters."
             processed_data = locations
         if attr == "moves":
-            move_names = [move['move']['name'].replace("-", " ") for move in field_data]
-            processed_data = ", ".join(move_names)
+            processed_data = []
+            for move in field_data:
+                is_in_game = any([game["version_group"]["name"] == GAME_TO_REPLICATE for game in move["version_group_details"]])
+                if is_in_game:
+                    processed_data.append(move['move'])
         if attr == "species":
             species_response = requests.get(field_data['url']).json()
             species_eng = [species["genus"] for species in species_response.get('genera', [{}]) if species["language"]["name"] == "en"]
             species_eng_name = species_eng[0] if len(species_eng) else "No species found"
             processed_data = species_eng_name.replace(" Pokémon", "")
         if attr == "weight":
-            processed_data = DataExtractor.convert_hectograms_to_pounds(field_data)
-            processed_data += f" (or {DataExtractor.convert_hectograms_to_kilograms(field_data)})"
+            # processed_data = DataExtractor.convert_hectograms_to_pounds(field_data)
+            # processed_data += f" (or {DataExtractor.convert_hectograms_to_kilograms(field_data)})"
+            processed_data = round(field_data / 10, 2)
+        if attr == "base_experience":
+            # processed_data = DataExtractor.convert_hectograms_to_pounds(field_data)
+            # processed_data += f" (or {DataExtractor.convert_hectograms_to_kilograms(field_data)})"
+            processed_data = field_data
         return processed_data
     
     @staticmethod
@@ -103,3 +119,8 @@ class DataExtractor:
     def convert_hectograms_to_kilograms(hectograms: float) -> str:
         kilograms = round(hectograms / 10, 2)
         return f"{kilograms} kg"
+
+    @staticmethod
+    def extract_from_url(url: str) -> Dict[str, Any]:
+        response = requests.get(url)
+        return response.json()

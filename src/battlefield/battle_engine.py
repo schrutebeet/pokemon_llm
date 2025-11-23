@@ -53,12 +53,12 @@ class BattleEngine:
             # First pokemon runs its turn
             who_starts, who_follows = self.run_pokemon_turn(who_starts, who_follows)
             if not who_follows.is_alive:
-                logger.info(f"{self.who_follows.name.upper()} has fainted!")
+                logger.info(f"{who_follows.name.upper()} has fainted!")
                 break
             # Second pokemon runs its turn
             who_follows, who_starts = self.run_pokemon_turn(who_follows, who_starts)
             if not who_starts.is_alive:
-                logger.info(f"{self.who_starts.name.upper()} has fainted!")
+                logger.info(f"{who_starts.name.upper()} has fainted!")
                 break
             who_starts, who_follows = self.execute_status_consequences(who_starts, who_follows)
             who_starts, who_follows = self.update_status_condition(who_starts, who_follows)
@@ -69,10 +69,8 @@ class BattleEngine:
             )
             round_count += 1
 
-        if who_starts.is_alive:
-            logger.info(f"{who_starts.name} wins!")
-        elif who_follows.is_alive:
-            logger.info(f"{who_follows.name} wins!")
+        winner = who_starts if who_starts.is_alive else who_follows
+        logger.info(f"{winner.name.upper()} wins!")
         self.end_battle()
     
     @staticmethod
@@ -107,6 +105,7 @@ class BattleEngine:
         )
         move_pick = self.bind_model_response_to_move_name_and_explanation(updated_trainer_info, self.llm)
         logger.info(f"{attacker.name.upper()} has chosen to attack with '{move_pick.move}'")
+        logger.debug(f"Reason: '{move_pick.explanation}'")
         move = self.get_move_by_name(attacker.moves, move_pick.move)
         defender = attacker.attack(defender, move)
         return attacker, defender
@@ -117,6 +116,7 @@ class BattleEngine:
         for pkmn in args:
             if pkmn.nvstatus == NVStatus.BURNT or pkmn.nvstatus == NVStatus.POISONED:
                 pkmn.current_hp -= pkmn.stats.hp / 8
+                logger.info(f"{pkmn.name.upper()} has lost {int(pkmn.stats.hp / 8)} HP due to being {pkmn.nvstatus.value}!")
             updated_pokemon_list.append(pkmn)
         return updated_pokemon_list
 
@@ -125,6 +125,7 @@ class BattleEngine:
         if who_starts.stats.speed < who_follows.stats.speed:
             now_second_place = who_starts
             who_starts, who_follows = who_follows, now_second_place
+            logger.info(f"{now_second_place.name.upper()} now moves second! {who_follows.name.upper()} moves first.")
         return who_starts, who_follows
     
     @staticmethod
@@ -148,6 +149,8 @@ class BattleEngine:
         )
         chain = prompt | llm | parser
         decision = chain.invoke({"format_instructions": parser.get_format_instructions()})
+        logger.debug("LLM request ran successfully.")
+        
         return decision
         
 

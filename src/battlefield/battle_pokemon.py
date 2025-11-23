@@ -50,7 +50,7 @@ class BattlePokemon(Pokemon):
         defense_power = defender.stats.defense if move.damage_class == "physical" else defender.stats.special_defense
         random_mtpl = np.random.uniform(85, 100) / 100
         base = (((2 * self.level / 5 + 2) * move.power * attack_power / defense_power) / 50) * burnt_modifier + 2
-        modifiers = critical_mtpl * is_stab * effectiveness(move.type, defender.types) * random_mtpl
+        modifiers = critical_mtpl * is_stab * effectiveness(move, defender.types) * random_mtpl
         damage = int(base * modifiers)
         return damage
     

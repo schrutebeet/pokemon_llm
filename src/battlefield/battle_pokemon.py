@@ -31,8 +31,11 @@ class BattlePokemon(Pokemon):
 
     def attack(self, defender: "BattlePokemon", move: Moves) -> "BattlePokemon":
         can_move = self.is_pokemon_able_to_move()
+        logger.debug(f"Pokemon is able to move?: {can_move}")
         is_damage_inflicted = bool(np.random.choice([True, False], p=[move.accuracy/100, 1 - (move.accuracy/100)]))
+        logger.debug(f"Is damage inflicted?: {is_damage_inflicted}")
         damage = self.compute_damage(defender, move) if (is_damage_inflicted and can_move) else 0
+        logger.info(f"Total damage caused to {defender.name.upper()}: {-damage} HP")
         defender = self.apply_ailment_if_move_allows(move, defender)
         defender.current_hp -= damage
         if defender.current_hp <= 0:
@@ -40,28 +43,34 @@ class BattlePokemon(Pokemon):
         return defender
 
     def compute_damage(self, defender: "BattlePokemon", move: Moves) -> int:
-        is_attacker_burnt = self.nvstatus == NVStatus.BURNT
-        criticality = (2 * self.level + 5) / (self.level + 5)
-        critical_hit = bool(np.random.choice([True, False], p=[1/16, 15/16]))
-        critical_mtpl = criticality * critical_hit +  1 * (not critical_hit)
-        is_stab = 1.5 if move.type in defender.types else 1
-        burnt_modifier = 0.5 if (is_attacker_burnt and move.damage_class == "physical") else 1
-        attack_power = self.stats.attack if move.damage_class == "physical" else self.stats.special_attack
-        defense_power = defender.stats.defense if move.damage_class == "physical" else defender.stats.special_defense
-        random_mtpl = np.random.uniform(85, 100) / 100
-        base = (((2 * self.level / 5 + 2) * move.power * attack_power / defense_power) / 50) * burnt_modifier + 2
-        modifiers = critical_mtpl * is_stab * effectiveness(move, defender.types) * random_mtpl
-        damage = int(base * modifiers)
+        if move.damage_class in ("physical", "special"):
+            is_attacker_burnt = self.nvstatus == NVStatus.BURNT
+            criticality = (2 * self.level + 5) / (self.level + 5)
+            critical_hit = bool(np.random.choice([True, False], p=[1/16, 15/16]))
+            critical_mtpl = criticality * critical_hit +  1 * (not critical_hit)
+            is_stab = 1.5 if move.type in defender.types else 1
+            burnt_modifier = 0.5 if (is_attacker_burnt and move.damage_class == "physical") else 1
+            attack_power = self.stats.attack if move.damage_class == "physical" else self.stats.special_attack
+            defense_power = defender.stats.defense if move.damage_class == "physical" else defender.stats.special_defense
+            random_mtpl = np.random.uniform(85, 100) / 100
+            base = (((2 * self.level / 5 + 2) * move.power * attack_power / defense_power) / 50) * burnt_modifier
+            modifiers = critical_mtpl * is_stab * effectiveness(move, defender.types) * random_mtpl
+            damage = int(base * modifiers)
+        else:
+            damage = 0
         return damage
     
     @staticmethod
     def apply_ailment_if_move_allows(move: Moves, defender: "BattlePokemon") -> "BattlePokemon":
         if move.ailment_name != NVStatus.NONE:
+            logger.debug(f"Move '{move.name}' has a possibility to leave the foe's pokemon {move.ailment_name.value}!")
             cond_prob = move.ailment_prob
             is_condition_applying = bool(np.random.choice([True, False], p=[cond_prob, 1 - cond_prob]))
+            logger.debug(f"Probability to leave the foe {move.ailment_name.value}: {cond_prob * 100}%")
+            logger.debug("Condition applies" if is_condition_applying else "Condition did not apply")
             if is_condition_applying:
                 defender.nvstatus = move.ailment_name
-                logger.info(f"{defender.name.upper()} has been {defender.nvstatus}!")
+                logger.info(f"{defender.name.upper()} has been {defender.nvstatus.value}!")
         return defender
     
     def is_pokemon_able_to_move(self) -> bool:

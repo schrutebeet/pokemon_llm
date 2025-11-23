@@ -14,21 +14,21 @@ from src.battlefield.status import set_nvstatus_from_api
 
 
 # @tool
-def get_pokemon_attributes(pokemon_list: list[str], **kwargs) -> dict:
+def get_pokemon_attributes(pokemon_list: List[str], **kwargs) -> List:
     """Get specific attributes for a list of Pokemon."""
     if kwargs.get("attributes"):
         attributes = kwargs["attributes"]
     else:
         attributes = ["id", "types", "stats", "species", "abilities", "cries", "height", "weight", "base_experience", "moves"]
-        
+
     data_extractor = DataExtractor(source="https://pokeapi.co/api/v2/pokemon")
 
-    pokemon_info: Dict = data_extractor.extract_specific_attribute(pokemon_list, attributes)
-    
+    pokemon_list: List = data_extractor.extract_specific_attribute(pokemon_list, attributes)
+    final_list = []
     if "moves" in attributes:
-        for pkmn_name, pkmn_info in pokemon_info.items():
-            if "moves" in pkmn_info.keys():
-                given_moves = np.random.choice(pkmn_info["moves"], size = 4, replace=False)
+        for pokemon in pokemon_list:
+            if "moves" in pokemon.keys():
+                given_moves = np.random.choice(pokemon["moves"], size = min(len(pokemon["moves"]), 4), replace=False)
                 final_given_moves = []
                 for move in given_moves:
                     move_name = move['name'].replace("-", " ")
@@ -37,8 +37,9 @@ def get_pokemon_attributes(pokemon_list: list[str], **kwargs) -> dict:
                     ailment_info = {} if move_data["meta"] is None else move_data["meta"]
                     move_obj = Moves(
                         name=move_name,
+                        description=move_data["flavor_text_entries"][0]["flavor_text"],
                         type=move_data["type"]["name"],
-                        damage_class=move_data["damage_class"]["name"],
+                        damage_class=move_data["effect_entries"][0]["effect"],
                         accuracy=max(move_data["accuracy"] if move_data["accuracy"] is not None else 100, 20),
                         power=move_data["power"] if move_data["power"] is not None else 50,
                         pp=move_data["pp"],
@@ -48,25 +49,25 @@ def get_pokemon_attributes(pokemon_list: list[str], **kwargs) -> dict:
                         ailment_prob=int(ailment_info.get("ailment_chance", 0) / 100),
                     )
                     final_given_moves.append(move_obj)
-                pokemon_info[pkmn_name]["moves"] = final_given_moves
-    return pokemon_info
+            pokemon["moves"] = final_given_moves
+            final_list.append(pokemon)
+    return final_list
 
 # @tool
-def return_loaded_pokemon_data(pokemon_info: dict) -> Pokemon:
+def return_loaded_pokemon_data(pokemon_info: List) -> List[Pokemon]:
     """Return a Pokemon object from loaded data."""
     output: List[Pokemon] = []
-    for pkmn_name, pkmn_info in pokemon_info.items():
-        pokemon_info[pkmn_name]["name"] = pkmn_name
-        pokemon_info[pkmn_name]["gender"] = str(np.random.choice(["male", "female"]))
-        pokemon_info[pkmn_name]["level"] = int(np.clip(1, np.random.normal(loc=50, scale=10), 100))
-        pokemon_info[pkmn_name]["iv"] = IV()
-        pokemon_info[pkmn_name]["ev"] = EV()
-        pokemon_info[pkmn_name]["ability"] = str(np.random.choice(list(pokemon_info[pkmn_name]["abilities"].keys())))
-        mod_stats = {k.replace("-", "_"): v for k,v in pokemon_info[pkmn_name]["stats"].items()}
-        pokemon_info[pkmn_name]["base_stats"] = BaseStats(**mod_stats)
-        pokemon_info[pkmn_name]["stats"] = Stats()
+    for pkmn_info in pokemon_info:
+        pkmn_info["gender"] = str(np.random.choice(["male", "female"]))
+        pkmn_info["level"] = int(np.clip(1, np.random.normal(loc=50, scale=10), 100))
+        pkmn_info["iv"] = IV()
+        pkmn_info["ev"] = EV()
+        pkmn_info["ability"] = str(np.random.choice(list(pkmn_info["abilities"].keys())))
+        mod_stats = {k.replace("-", "_"): v for k,v in pkmn_info["stats"].items()}
+        pkmn_info["base_stats"] = BaseStats(**mod_stats)
+        pkmn_info["stats"] = Stats()
 
-        output.append(Pokemon.model_validate(pokemon_info[pkmn_name]))
+        output.append(Pokemon.model_validate(pkmn_info))
     
     return output
 
@@ -77,7 +78,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-my_pokemons = ["Garbodor", "Pyukumuku"]
+my_pokemons = ["Metapod", "Metapod"]
 pokemon_attrs = get_pokemon_attributes(my_pokemons)
 pokemon_attrs = return_loaded_pokemon_data(pokemon_attrs)
 

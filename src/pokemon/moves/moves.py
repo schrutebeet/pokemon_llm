@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import List, Dict
 
 from src.pokemon.types import PokemonType
@@ -7,6 +7,7 @@ from src.battlefield.status import NVStatus
 
 class Moves(BaseModel):
     name: str
+    description: str
     type: PokemonType
     damage_class: str
     accuracy: int

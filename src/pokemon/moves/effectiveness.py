@@ -65,8 +65,12 @@ def effectiveness(move: Moves, defender_types: List[PokemonType]) -> float:
     
     if len(multipliers) == 2:
         value = reduce(operator.mul, multipliers, 1.0)
-        if multipliers > 1:
-            logger.info(f"{move.name} ({move.type.values}) is very effective!")
+        if value > 1:
+            logger.info(f"{move.name} ({move.type.value}) is very effective! ({value}x)")
+        if 0 < value < 1:
+            logger.info(f"{move.name} ({move.type.value}) is not very effective ({value}x).")
+        if value == 0:
+            logger.info(f"{move.name} ({move.type.value}) did not affect at all (0x).")
         return reduce(operator.mul, multipliers, 1.0)
     
     else:

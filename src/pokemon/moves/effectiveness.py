@@ -2,6 +2,8 @@ from typing import Dict, List, Tuple
 from functools import reduce
 import operator
 
+from config.logging import logger
+from src.pokemon.moves.moves import Moves
 from src.pokemon.types import PokemonType
 
 # Pokémon Type Effectiveness Chart (Gen 6+ standard, up to Gen 9)
@@ -42,11 +44,12 @@ TYPE_CHART: Dict[str, Dict[str, float]] = {
                  "dark": 2, "steel": 0.5},
 }
 
-def effectiveness(move_type: PokemonType, defender_types: List[PokemonType]) -> float:
+def effectiveness(move: Moves, defender_types: List[PokemonType]) -> float:
     """
     Calculate total effectiveness of a move against a Pokémon with 1 or 2 types.
     Returns: 0, 0.25, 0.5, 1, 2, or 4 (etc.)
     """
+    move_type = move.type
     move_type = move_type.lower()
     multipliers = []
     
@@ -61,6 +64,9 @@ def effectiveness(move_type: PokemonType, defender_types: List[PokemonType]) -> 
         return multipliers[0]
     
     if len(multipliers) == 2:
+        value = reduce(operator.mul, multipliers, 1.0)
+        if multipliers > 1:
+            logger.info(f"{move.name} ({move.type.values}) is very effective!")
         return reduce(operator.mul, multipliers, 1.0)
     
     else:

@@ -16,7 +16,8 @@ Some hints before you cast any decision:
 - Poisoned: Same as 'burnt' - drains 1/8 max HP per turn.
 - Paralized: Reduces Speed stat by 25%, with 25% chance to be fully immobilized and not be able to attack.
 - Asleep: Prevents attacks/items for several turns. Sleep lasts for a randomly chosen duration of 1 to 5 turns.
-- Frozen: Pokemon is unable to move. The Pokemon has 20% chance it will get thawed in the next turn. 
+- Frozen: Pokemon is unable to move. The Pokemon has 20% chance it will get thawed in the next turn.
+- the 'damage class' in the move tells you if the movement is causing damage to your enemy ('physical', 'special), or not (<any other>).
 
 Given the above information, the below stats will help you take a move decision:
 

@@ -21,6 +21,9 @@ class BattleEngine:
                  llm: ChatOpenAI | Any) -> None:
         self.user_pokemon = BattlePokemon.from_pokemon_class(user_pokemon) if isinstance(user_pokemon, Pokemon) else user_pokemon
         self.foe_pokemon = BattlePokemon.from_pokemon_class(foe_pokemon) if isinstance(foe_pokemon, Pokemon) else foe_pokemon
+        if self.user_pokemon.name == self.foe_pokemon.name:
+            self.user_pokemon.name += " 1"
+            self.foe_pokemon.name += " 2"
         self.llm =llm
 
     def start_battle(self):
@@ -60,7 +63,11 @@ class BattleEngine:
             if not who_starts.is_alive:
                 logger.info(f"{who_starts.name.upper()} has fainted!")
                 break
+            # Execute condition consequences
             who_starts, who_follows = self.execute_status_consequences(who_starts, who_follows)
+            if not who_starts.is_alive:
+                logger.info(f"{who_starts.name.upper()} has fainted!")
+                break
             who_starts, who_follows = self.update_status_condition(who_starts, who_follows)
             who_starts, who_follows = self.update_who_starts_first(who_starts, who_follows)
             logger.info(
@@ -80,6 +87,8 @@ class BattleEngine:
             if pkmn.nvstatus != NVStatus.NONE:
                 reset_conditions = bool(np.random.choice([True, False], p=[.25, .75]))
                 pkmn.nvstatus = NVStatus.NONE if reset_conditions else pkmn.nvstatus
+                if reset_conditions:
+                    logger.info(f"{pkmn.name.upper()} is no longer {pkmn.nvstatus.value}!")
             if pkmn.nvstatus == NVStatus.PARALIZED:
                 pkmn.stats.speed *= 0.75
             updated_pokemon_list.append(pkmn)
@@ -115,8 +124,11 @@ class BattleEngine:
         updated_pokemon_list = []
         for pkmn in args:
             if pkmn.nvstatus == NVStatus.BURNT or pkmn.nvstatus == NVStatus.POISONED:
-                pkmn.current_hp -= pkmn.stats.hp / 8
+                pkmn.current_hp -= int(pkmn.stats.hp / 8)
                 logger.info(f"{pkmn.name.upper()} has lost {int(pkmn.stats.hp / 8)} HP due to being {pkmn.nvstatus.value}!")
+                if pkmn.current_hp <= 0:
+                    pkmn.change_alive_status()
+
             updated_pokemon_list.append(pkmn)
         return updated_pokemon_list
 

@@ -36,7 +36,7 @@ class BattleEngine:
             f"{self.user_pokemon.name.upper()} is at level {self.user_pokemon.level} and starts with {self.user_pokemon.stats.hp} HP"
         )
         logger.info(
-            f"and {self.foe_pokemon.name.upper()} is at level {self.foe_pokemon.level} and starts with {self.user_pokemon.stats.hp} HP"
+            f"and {self.foe_pokemon.name.upper()} is at level {self.foe_pokemon.level} and starts with {self.foe_pokemon.stats.hp} HP"
         )
         logger.info(
             f"{self.user_pokemon.name.upper()} can use {", ".join([move.name for move in self.user_pokemon.moves])} as moves"

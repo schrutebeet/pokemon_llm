@@ -43,3 +43,9 @@ class Pokemon(BaseModel):
                 value = (((2 * base_stat_value + iv_stat_value + (ev_stat_value/4)) * level) // 100) + 5
                 setattr(values["stats"], base_stat_name, value)
         return values
+
+    def get_move_by_name(self, move_name: str) -> Moves:
+        for move in self.moves:
+            if move.name.lower() == move_name.lower():
+                return move
+        raise ValueError(f"Move with name {move_name} not found for Pokemon {self.name}")

@@ -71,4 +71,4 @@ def set_log_file(path: str, level: int = logging.INFO) -> None:
 # Auto-configure on import with defaults so callers can immediately do:
 #   from config.logging import logger
 #   logger.warning("Something something")
-configure()
+configure(level = logging.INFO)

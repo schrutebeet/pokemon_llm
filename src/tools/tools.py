@@ -39,7 +39,7 @@ def get_pokemon_attributes(pokemon_list: List[str], **kwargs) -> List:
                         name=move_name,
                         description=move_data["flavor_text_entries"][0]["flavor_text"],
                         type=move_data["type"]["name"],
-                        damage_class=move_data["effect_entries"][0]["effect"],
+                        damage_class=move_data["damage_class"]["name"],
                         accuracy=max(move_data["accuracy"] if move_data["accuracy"] is not None else 100, 20),
                         power=move_data["power"] if move_data["power"] is not None else 50,
                         pp=move_data["pp"],
@@ -78,7 +78,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-my_pokemons = ["Metapod", "Metapod"]
+my_pokemons = ["Charizard", "Charizard"]
 pokemon_attrs = get_pokemon_attributes(my_pokemons)
 pokemon_attrs = return_loaded_pokemon_data(pokemon_attrs)
 

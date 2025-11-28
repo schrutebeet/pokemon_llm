@@ -16,4 +16,4 @@ class Moves(BaseModel):
     priority: int
     stat_changes: List[int]
     ailment_name: NVStatus
-    ailment_prob: int
+    ailment_prob: float

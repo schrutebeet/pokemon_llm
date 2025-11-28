@@ -46,7 +46,7 @@ def get_pokemon_attributes(pokemon_list: List[str], **kwargs) -> List:
                         priority=move_data["priority"],
                         stat_changes=[stat_change["change"] for stat_change in move_data.get("stat_changes", [])],
                         ailment_name=set_nvstatus_from_api(ailment_info.get("ailment", {}).get("name")),
-                        ailment_prob=int(ailment_info.get("ailment_chance", 0) / 100),
+                        ailment_prob=ailment_info.get("ailment_chance", 0) / 100,
                     )
                     final_given_moves.append(move_obj)
             pokemon["moves"] = final_given_moves

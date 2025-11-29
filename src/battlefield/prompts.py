@@ -18,6 +18,7 @@ Some hints before you cast any decision:
 - Asleep: Prevents attacks/items for several turns. Sleep lasts for a randomly chosen duration of 1 to 5 turns.
 - Frozen: Pokemon is unable to move. The Pokemon has 20% chance it will get thawed in the next turn.
 - the 'damage class' in the move tells you if the movement is causing damage to your enemy ('physical', 'special), or not (<any other>).
+- If you see your previous move did not cause any damage, try to select another one.
 
 Given the above information, the below stats will help you take a move decision:
 
@@ -45,6 +46,11 @@ Given the above information, the below stats will help you take a move decision:
 <<< FOE STATUS >>>
 {foe_nvstatus}
 <<< ----- >>>
+
+5) If you have already used some moves, here is the history of the battle so far. Round 0 is the initial state.
+<<< BATTLE HISTORY >>>
+- your pokemon's history: {user_battle_history}
+- foe pokemon's history: {foe_battle_history}
 ------------------------------------------------------------
 
 Your pokemon's four possible moves are...

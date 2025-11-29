@@ -18,6 +18,8 @@ class DataExtractor:
         elif isinstance(pokemon_name, list):
             for name in pokemon_name:
                 response = requests.get(f"{self.source}/{name}")
+                if response.status_code == 404:
+                    raise ValueError(f"Pokemon '{name}' not found in the API. Make sure you did not misspell it.")
                 pokemon_info = response.json()
                 pokemon_info["name"] = name
                 data_output.append(pokemon_info)
@@ -88,6 +90,10 @@ class DataExtractor:
             # processed_data = DataExtractor.convert_hectograms_to_pounds(field_data)
             # processed_data += f" (or {DataExtractor.convert_hectograms_to_kilograms(field_data)})"
             processed_data = field_data
+        if attr == "sprites":
+            # processed_data = DataExtractor.convert_hectograms_to_pounds(field_data)
+            # processed_data += f" (or {DataExtractor.convert_hectograms_to_kilograms(field_data)})"
+            processed_data = field_data["other"]["showdown"]
         return processed_data
     
     @staticmethod

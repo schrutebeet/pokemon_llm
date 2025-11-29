@@ -4,7 +4,7 @@ import requests
 import gradio as gr
 from huggingface_hub import InferenceClient
 
-from src.config.config import Config
+from config.config import Config
 from src.prompts import system_prompt
 from src.data_extractor import DataExtractor
 

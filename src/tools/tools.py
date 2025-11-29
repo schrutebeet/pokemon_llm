@@ -19,7 +19,7 @@ def get_pokemon_attributes(pokemon_list: List[str], **kwargs) -> List:
     if kwargs.get("attributes"):
         attributes = kwargs["attributes"]
     else:
-        attributes = ["id", "types", "stats", "species", "abilities", "cries", "height", "weight", "base_experience", "moves"]
+        attributes = ["id", "types", "stats", "species", "abilities", "cries", "height", "weight", "base_experience", "moves", "sprites"]
 
     data_extractor = DataExtractor(source="https://pokeapi.co/api/v2/pokemon")
 
@@ -66,24 +66,9 @@ def return_loaded_pokemon_data(pokemon_info: List) -> List[Pokemon]:
         mod_stats = {k.replace("-", "_"): v for k,v in pkmn_info["stats"].items()}
         pkmn_info["base_stats"] = BaseStats(**mod_stats)
         pkmn_info["stats"] = Stats()
+        pkmn_info["sprite_front_url"] = pkmn_info["sprites"]["front_default"]
+        pkmn_info["sprite_back_url"] = pkmn_info["sprites"]["back_default"]
 
         output.append(Pokemon.model_validate(pkmn_info))
     
     return output
-
-
-
-from src.battlefield.battle_engine import BattleEngine
-from dotenv import load_dotenv
-
-load_dotenv()
-
-my_pokemons = ["Charizard", "Charizard"]
-pokemon_attrs = get_pokemon_attributes(my_pokemons)
-pokemon_attrs = return_loaded_pokemon_data(pokemon_attrs)
-
-from langchain.chat_models import init_chat_model
-llm = init_chat_model(model="openai:gpt-4o-mini")
-
-battle = BattleEngine(*pokemon_attrs, llm=llm)
-battle.start_ai_battle()

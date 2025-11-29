@@ -8,7 +8,7 @@ VS (volatile status): temporary status that fades away once you remove the Pokem
 """
 
 class NVStatus(str, Enum):
-    NONE = "not affected by any non-volatile status"
+    NONE = "not affected by any condition"
     BURNT = "burnt"
     FROZEN = "frozen"
     PARALIZED = "paralized"

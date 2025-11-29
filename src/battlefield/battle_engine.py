@@ -24,7 +24,7 @@ class BattleEngine:
         if self.user_pokemon.name == self.foe_pokemon.name:
             self.user_pokemon.name += " 1"
             self.foe_pokemon.name += " 2"
-        self.llm =llm
+        self.llm = llm
 
     def start_battle(self):
         # TODO
@@ -50,23 +50,24 @@ class BattleEngine:
         who_starts = self.user_pokemon if self.user_pokemon.stats.speed > self.foe_pokemon.stats.speed else self.foe_pokemon
         who_follows =  self.user_pokemon if self.user_pokemon.stats.speed <= self.foe_pokemon.stats.speed else self.foe_pokemon
         logger.info(f"{who_starts.name.upper()} moves first")
+        self.update_history(self.user_pokemon, self.foe_pokemon, n_rounds=0)
         round_count = 1
         while True:
             logger.info(f"Moving to round #{round_count}")
             # First pokemon runs its turn
             who_starts, who_follows = self.run_pokemon_turn(who_starts, who_follows)
             if not who_follows.is_alive:
-                logger.info(f"{who_follows.name.upper()} has fainted!")
+                self.end_battle(who_starts, who_follows, round_count)
                 break
             # Second pokemon runs its turn
             who_follows, who_starts = self.run_pokemon_turn(who_follows, who_starts)
             if not who_starts.is_alive:
-                logger.info(f"{who_starts.name.upper()} has fainted!")
+                self.end_battle(who_starts, who_follows, round_count)
                 break
             # Execute condition consequences
             who_starts, who_follows = self.execute_status_consequences(who_starts, who_follows)
-            if not who_starts.is_alive:
-                logger.info(f"{who_starts.name.upper()} has fainted!")
+            if not who_starts.is_alive or not who_follows.is_alive:
+                self.end_battle(who_starts, who_follows, round_count)
                 break
             who_starts, who_follows = self.update_status_condition(who_starts, who_follows)
             who_starts, who_follows = self.update_who_starts_first(who_starts, who_follows)
@@ -74,12 +75,35 @@ class BattleEngine:
                 f"End of round - {self.user_pokemon.name.upper()} has {self.user_pokemon.current_hp} HP left "
                 f"and {self.foe_pokemon.name.upper()} has {self.foe_pokemon.current_hp} HP left"
             )
+            who_starts, who_follows = self.update_history(who_starts, who_follows, n_rounds=round_count)
             round_count += 1
-
-        winner = who_starts if who_starts.is_alive else who_follows
-        logger.info(f"{winner.name.upper()} wins!")
-        self.end_battle()
     
+    def assign_pokemons_to_trainers(self, *args: BattlePokemon) -> None:
+        for pkmn in args:
+            if pkmn.name == self.user_pokemon.name:
+                self.user_pokemon = pkmn
+            elif pkmn.name == self.foe_pokemon.name:
+                self.foe_pokemon = pkmn
+
+    @staticmethod
+    def update_history(*args: BattlePokemon, n_rounds: int) -> List[BattlePokemon]:
+        updated_pokemon_list = []
+        for pkmn in args:
+            the_other_pkmn = args[1] if pkmn == args[0] else args[0]
+            pkmn.history["Round"].append(f"Round {n_rounds}")
+            pkmn.history["HP"].append(max(0, int(pkmn.current_hp)))
+            pkmn.history["Status"].append(pkmn.nvstatus.value)
+            if n_rounds == 0 or len(pkmn.moves_used) < n_rounds:
+                pkmn.history["Attacked with"].append("N/A")
+            else:
+                pkmn.history["Attacked with"].append(pkmn.moves_used[n_rounds - 1].name.capitalize())
+            if n_rounds == 0 or len(the_other_pkmn.moves_used) < n_rounds:
+                pkmn.history["Attacked by"].append("N/A")
+            else:
+                pkmn.history["Attacked by"].append(the_other_pkmn.moves_used[n_rounds - 1].name.capitalize())
+            updated_pokemon_list.append(pkmn)
+        return updated_pokemon_list
+
     @staticmethod
     def update_status_condition(*args: BattlePokemon) -> List[BattlePokemon]:
         updated_pokemon_list = []
@@ -110,13 +134,16 @@ class BattleEngine:
             foe_stats = defender.stats,
             user_nvstatus = attacker.nvstatus.value,
             foe_nvstatus = defender.nvstatus.value,
-            moves = attacker.moves
+            moves = attacker.moves,
+            user_battle_history = self.format_history_for_llm_natural(attacker.history),
+            foe_battle_history = self.format_history_for_llm_natural(defender.history),
         )
         move_pick = self.bind_model_response_to_move_name_and_explanation(updated_trainer_info, self.llm)
         logger.info(f"{attacker.name.upper()} has chosen to attack with '{move_pick.move}'")
         logger.debug(f"Reason: '{move_pick.explanation}'")
         move = self.get_move_by_name(attacker.moves, move_pick.move)
         defender = attacker.attack(defender, move)
+        attacker.moves_used.append(move)
         return attacker, defender
 
     @staticmethod
@@ -166,5 +193,26 @@ class BattleEngine:
         return decision
         
 
-    def end_battle(self) -> None:
+    def end_battle(self, who_starts: BattlePokemon, who_follows: BattlePokemon, n_rounds: int) -> None:
+        winner = who_starts if who_starts.is_alive else who_follows
+        loser = who_follows if winner == who_starts else who_starts
+        logger.info(f"{loser.name.upper()} has fainted!")
+        logger.info(f"{winner.name.upper()} wins!")
+        self.update_history(who_starts, who_follows, n_rounds=n_rounds)
+        self.assign_pokemons_to_trainers(who_starts, who_follows)
         logger.info(f"Battle has concluded")
+
+    @staticmethod
+    def format_history_for_llm_natural(history_dict):
+        """Format as natural language narrative."""
+        num_rounds = len(next(iter(history_dict.values())))
+        
+        narrative = []
+        for i in range(num_rounds):
+            parts = [f"Round {i}:"]
+            for key, values in history_dict.items():
+                if key != 'Round':
+                    parts.append(f"{key} was {values[i]}")
+            narrative.append(", ".join(parts) + ".")
+        
+        return " || ".join(narrative)

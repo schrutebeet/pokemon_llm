@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Dict, List
 
 from src.pokemon.pokemon import Pokemon
 from src.pokemon.moves.moves import Moves
@@ -12,10 +13,14 @@ class BattlePokemon(Pokemon):
     nvstatus: NVStatus = NVStatus.NONE
     vstatus: VStatus = VStatus.NONE
     _is_alive: bool = True
+    moves_used: List[Moves] = []
+    history: Dict[str, List] = {}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.current_hp = self.stats.hp
+        self.history = {"Round": [], "HP": [], "Status": [], "Attacked with": [], "Attacked by": []}
+        self.moves_used = []
 
     @property
     def is_alive(self) -> bool:
@@ -39,6 +44,7 @@ class BattlePokemon(Pokemon):
         defender = self.apply_ailment_if_move_allows(move, defender)
         defender.current_hp -= damage
         if defender.current_hp <= 0:
+            defender.current_hp = 0
             defender.change_alive_status()
         return defender
 

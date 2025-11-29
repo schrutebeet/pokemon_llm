@@ -23,9 +23,11 @@ class Pokemon(BaseModel):
     ev: EV
     base_experience: int
     moves: List[Moves]
+    sprite_front_url: str
+    sprite_back_url: str
 
     @model_validator(mode='before')
-    def compute_pokemon_stats(cls, values):
+    def post_processing(cls, values):
         base_stats = values["base_stats"]
         iv = values["iv"]
         ev = values["ev"]
